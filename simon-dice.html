@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Simón Dice</title>
+    <style>
+      * {
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      p {
+        margin: 0;
+      }
+
+      body {
+        margin: 0;
+        background: #dedede;
+        display: flex;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        margin: auto;
+      }
+
+      .gameboard {
+        height: 100vh;
+        width: 100vh;
+        border-radius: 50%;
+        overflow: hidden;
+        margin: 0 auto;
+        max-height: 60vh;
+        max-width: 60vh;
+      }
+
+      .color {
+        width: 50%;
+        height: 50%;
+        display: inline-block;
+      }
+
+      /* El estilo “float” sirve para alinear un elemento, haciendo que el texto de alrededor del mismo se agrupe entorno a dicho elemento. Sus posibles valores son “left” (para alinear el elemento a la izquierda) y “right” (para alinearlo a la derecha).Un elemento con float CSS debe tener definida su anchura. De no ser así, no será tratado como tal y el estilo no se aplicará. */
+
+      .left {
+        float: left;
+      }
+
+      .right {
+        float: right;
+      }
+
+      .celeste {
+        background: #22a6b3;
+      }
+
+      .celeste.light {
+        background: #7ed6df;
+      }
+
+      .violeta {
+        background: #be2edd;
+      }
+
+      .violeta.light {
+        background: #e056fd;
+      }
+
+      .naranja {
+        background: #f0932b;
+      }
+
+      .naranja.light {
+        background: #ffbe76;
+      }
+
+      .verde {
+        background: #6ab04c;
+      }
+
+      .verde.light {
+        background: #badc58;
+      }
+
+      .btn-start {
+        width: 400px;
+        height: 100px;
+        background: #ecf0f1;
+        color: #2c3e50;
+        font-size: 2.5rem;
+        position: absolute;
+        top: calc(50% - 100px);
+        left: calc(50% - 200px);
+      }
+
+      .record {
+        margin-top: 10px;
+        box-shadow: 0px 5px 5px 0px rgba(0,0,0,0.26);
+        font-size: 1.5em;
+      }
+
+      .reset-container {
+        text-align: center;
+      }
+
+      .reset {
+        border: 1px solid gray;
+        border-radius: 50px;
+        font-size: 1em;
+      }
+
+      .hide {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="gameboard">
+        <div id="celeste" class="color celeste left" data-color="celeste"></div>
+        <!-- data-color: cada elemento cuando el clickeado (event), tiene en el atributo target, un atributo interno llamado dataset, dentro de dataset hay un atributo llamado color junto con su valor celeste (violeta, naranja, verde), esto lo incluimos en el HTML al poner data-color="celeste") -->
+        <div id="violeta" class="color violeta right" data-color="violeta"></div>
+        <div id="naranja" class="color naranja left" data-color="naranja"></div>
+        <div id="verde" class="color verde right" data-color="verde"></div>
+        <button id="btnEmpezar" class="btn-start" onclick="startGame()">Empezar a jugar!</button>
+      </div>
+      <div class="record">
+        <div class="timer-container">
+          <p>
+            <span class="timer-title">Nombre: </span><span id="name"></span>
+          </p>
+        </div>
+        <div class="score-container">
+          <p>
+            <span class="score-title">Puntaje: </span><span id="score"></span>
+          </p>
+        </div>
+        <div class="reset-container">
+          <button type="reset" onclick="reset()" id="reset" class="reset">Volver a empezar</button>
+        </div>
+      </div>
+    </div>
+    <!-- Librería para enviar mensajes de alertas de forma más bonita. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js"></script>
+    <script>
+      function startGame() {
+        window.game = new Game() // cambio el var game = new Game(); por window.game = new Game();
+        // Esto se hace para probar que el elemento funcione.
+        // Al presionar el botón "Empezar a jugar!", colocamos en console: game y se verá el objeto.
+      }
+      
+      function reset() {
+        javascript:window.location.reload();
+      }
+
+      const celeste = document.getElementById('celeste')
+      const violeta = document.getElementById('violeta')
+      const naranja = document.getElementById('naranja')
+      const verde = document.getElementById('verde')
+      const btnEmpezar = document.getElementById('btnEmpezar')
+      const score = document.getElementById('score')
+      const seconds = document.getElementById('seconds')
+      const minutes = document.getElementById('minutes')
+      const name = document.getElementById('name')
+      const LAST_LEVEL = 10
+      name.innerHTML = prompt("Escriba su nombre.")
+
+      class Game {
+        // La clase Juego tendrá toda la lógica de nuestro videojuego.
+        constructor() {
+          this.initialize = this.initialize.bind(this) // Atamos el this.
+          this.initialize() // Inicializamos.
+          this.generateSequence()
+          setTimeout(this.nextLevel, 500) // Durará 0.5 segundos antes de empezar.
+        }
+
+        initialize() {
+          this.selectColor = this.selectColor.bind(this) // AQUÍ SE HACE EL PASO DEL BIND ABAJO EN SELECT COLOR.
+          this.nextLevel = this.nextLevel.bind(this) // This siempre estará atada al objeto game.
+          this.toggleBtnStart() // Con esto ocultamos el comando de abajo.
+          // btnEmpezar.classList.add('hide') // A la clase de CSS que tiene se le agrega otra clase que se llama hide (display: none).
+          this.level = 1 // Variable para referenciar que el nivel empieza en 1.
+          this.colors = { // Guardamos los colores en un objeto llamado colors. Están arriba con const.
+            // celeste: celeste, // Si en el objeto el atributo y el valor son el mismo, se puede solamente poner el nombre y listo. Ejemplos abajo.
+            celeste,
+            violeta,
+            naranja,
+            verde
+          }
+          this.puntos = 0 // Contador para el puntaje.
+          score.innerHTML = this.puntos // Reseteamos la vista de Puntaje (score).
+        }
+
+        toggleBtnStart() {
+          if(btnEmpezar.classList.contains('hide')) {
+            btnEmpezar.classList.remove('hide')
+          } else {
+            btnEmpezar.classList.add('hide')
+          }
+        }
+
+        generateSequence() {
+          // Generamos un nuevo array con números randoms.
+          this.sequence = new Array(LAST_LEVEL).fill(0).map(n => Math.floor(Math.random()*4))
+          // new Array() crea un nuevo array donde dentro del paréntesis decimos cuantos elementos tendrá, pero no tendrán valor.
+          // con .fill() dentro del paréntesis se coloca el valor que tendrán los elementos. Se debe poner para luego usar el método map, porque map se usa con arrays que sus elementos tienen valor.
+          // Math.floor redondea el valor dado dentro del paréntesis, lo convierte en entero.
+          // Math.random predeterminadamente da un valor decimal entre 0 y 1, si se mulltiplica por 4 va a ser ente 0 y 4 pero sin llegar a 4.
+          // n son los valores del array (0).
+        }
+
+        nextLevel() {
+          this.subLevel = 0 // Contador que sirve para llevar el patron del array (0 1 2 3 4 5 6 7 8 9), y para verificar si acabo el juego cuando llegue a 11.
+          this.lightSecuence()
+          this.addEventsClick()
+          // this.addScore()
+        }
+
+        addScore() {
+          this.puntos++
+          score.innerHTML = this.puntos // Introduzco a mi código html score elvalor de puntos.
+        }
+
+        transformNumberToColor(num) {
+          switch(num) { // Dependiendo de la selección se envía un número como parámetro.
+            case 0:
+              return 'celeste'
+              // break // No hace falta el break si se hace un return.
+            case 1:
+              return 'violeta'
+            case 2:
+              return 'naranja'
+            case 3:
+              return 'verde'
+          }
+        }
+
+        transformColorToNumber(color) { // Para verficar el color seleccionado por el usuario.
+          switch(color) { 
+            case 'celeste':
+              return 0
+            case 'violeta':
+              return 1
+            case 'naranja':
+              return 2
+            case 'verde':
+              return 3
+          }
+        }
+
+        lightSecuence() {
+          // for desde 0, del tamaño de la variable level y de 1 en 1.
+          for(let i=0; i<this.level; i++) {  
+            // Guardamos en una variable llamada color, el string del valor de la secuencia.
+            const color = this.transformNumberToColor(this.sequence[i])
+            // Llamamos la función que iluminará cada color por tantos segundos.
+            setTimeout(() => this.lightColor(color), 1000*i) // Por cada nivel se agrega 1 segundo.
+            // Si no colocamos el setTimeout, se ejecutarán varios a la vez.
+          }
+        }
+
+        lightColor(color) {
+          this.colors[color].classList.add('light') // Se agrega la clase light que es un color más iluminado.
+          setTimeout(() => this.offColor(color), 350) // Quitará el color en 0.35 segundos. 
+        }
+
+        offColor(color) {
+          this.colors[color].classList.remove('light')
+        }
+
+        addEventsClick() {
+          // addEventListener(evento, función): donde evento es la acción que el usuario realiza y función es la acción a relizar.
+          this.colors.celeste.addEventListener('click', this.selectColor)
+          // NOTA MEGA IMPORTANTE: el método bind lo que hace es setear con nuevos parametros esa función. Osea no agarrará el this general si no realmente eñ this de este elemento.
+          // Cuando agregamos estos escuchadores de eventos (addEventListener()), se llaman con un parámetro.
+          this.colors.violeta.addEventListener('click', this.selectColor)
+          this.colors.naranja.addEventListener('click', this.selectColor)
+          this.colors.verde.addEventListener('click', this.selectColor)
+        }
+
+        deleteEventsClick() {
+          this.colors.celeste.removeEventListener('click', this.selectColor)
+          this.colors.violeta.removeEventListener('click', this.selectColor)
+          this.colors.naranja.removeEventListener('click', this.selectColor)
+          this.colors.verde.removeEventListener('click', this.selectColor)
+        }
+
+        // Aquí el parametro predeterminado (esto ocurre cada vez que se llama un listeber).
+        selectColor(ev) {
+          // console.log(ev) // Se agrega esto para que cada vez que se presione el color se muestre el evento (ES UN OBJETO).
+          // Uno de los atributos del evento es target, que dice cuál fue el botón que se seleccionó.
+          // console.log(this) // this es el botón que se está llamando. Es quién dispara el evento, es this de ese método.
+          const nameColor =  ev.target.dataset.color // Guardamos el valor del evento target dataset color.
+          const numberColor = this.transformColorToNumber(nameColor) // Guardamos el valor en números del color seleccionado.
+
+          this.lightColor(nameColor) // Alumbramos el color seleccionado.
+
+          if(numberColor === this.sequence[this.subLevel]) {
+            this.subLevel++
+            if (this.subLevel === this.level) {
+              this.addScore()
+              this.level++
+              this.deleteEventsClick // Eliminamos los registros de los clicks.
+              if(this.level === (LAST_LEVEL+1)) {
+                this.winGame()
+              } else {
+                // En este caso this es window, el encargado de ejecutar la función es window, setTimeout delega en el navegador la ejecución de esta función y cambia el this, debemos hacer que el this sea el objeto game.
+                setTimeout(this.nextLevel, 1500) // Se inicializó this.nextLevel atado al this del objeto game.
+              }
+            }
+          } else {
+            this.lostGame()
+          }
+        }
+
+        winGame() {
+          // Utilizamos la librería ya cargada como cdn sweetalert.
+          swal('¡GANASTE!', '¡Felicidades, ganaste le juego!', 'sucess') // swal('Título', 'Subtítulo', 'Tipo de icono').
+          // El swal nos devuelve una promesa, por ende podemos usar .then.
+            .then(() => { // Cerró el swal.
+              // this.deleteEventsClick() // Ya este paso está hecho en selectColor(ev).
+              this.initialize()
+            })
+        }
+
+        lostGame() {
+          swal('Perdiste...', 'Perdiste el juego :c', 'error') // swal('Título', 'Subtítulo', 'Tipo de icono').
+          // El swal nos devuelve una promesa, por ende podemos usar .then.
+            .then(() => { // Cerró el swal.
+              // this.deleteEventsClick() // Ya este paso está hecho en selectColor(ev).
+              this.deleteEventsClick()
+              this.initialize()
+            })
+        }
+      }
+    </script>
+  </body>
+</html>
